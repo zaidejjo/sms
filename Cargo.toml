@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "sms-core",
     "sms-cli",
+    "sms-tui",
 ]
 
 [workspace.package]
