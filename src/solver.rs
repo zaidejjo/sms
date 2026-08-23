@@ -12,6 +12,7 @@ pub struct EquationSolver {
 
 impl EquationSolver {
     // Fast mode (performance)
+    #[allow(dead_code)]
     pub fn new() -> Self {
         EquationSolver {
             max_iterations: 30,        // Fewer iterations
@@ -23,6 +24,7 @@ impl EquationSolver {
     }
 
     // Precision mode (for complex solutions)
+    #[allow(dead_code)]
     pub fn new_precision() -> Self {
         EquationSolver {
             max_iterations: 80,
@@ -72,7 +74,6 @@ impl EquationSolver {
         let derivative_expr = derivative(expr, var);
         let mut x = start;
         let mut prev_x = x;
-        let mut fast_convergence = false;
         
         for i in 0..self.max_iterations {
             let mut vars = HashMap::new();

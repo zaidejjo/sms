@@ -4,17 +4,61 @@ mod solver;
 mod matrix;
 mod series;
 mod ai;
+mod constants;
+mod fractions;
+mod export;
 
 use std::io;
 use std::time::Instant;
 use std::collections::HashMap;
 use std::process::Command;
-use crate::expr::{Expr, evaluate, evaluate_complex};
-use crate::parser::Parser;
-use crate::solver::EquationSolver;
-use crate::matrix::{parse_matrix, parse_vector};
-use crate::series::{compute_series, SeriesOp};
-use crate::ai::AISolver;
+use expr::{Expr, evaluate, evaluate_complex};
+use parser::Parser;
+use solver::EquationSolver;
+use matrix::{parse_matrix, parse_vector};
+use series::{compute_series, SeriesOp};
+use ai::AISolver;
+use fractions::Fraction;
+use export::ExportData;
+
+// 🔥 تاريخ المعادلات (للتنقل بالأسهم)
+struct History {
+    entries: Vec<String>,
+    current: usize,
+}
+
+impl History {
+    fn new() -> Self {
+        History {
+            entries: Vec::new(),
+            current: 0,
+        }
+    }
+
+    fn add(&mut self, entry: String) {
+        self.entries.push(entry);
+        self.current = self.entries.len();
+    }
+
+    fn previous(&mut self) -> Option<&str> {
+        if self.current > 0 {
+            self.current -= 1;
+            self.entries.get(self.current).map(|s| s.as_str())
+        } else {
+            None
+        }
+    }
+
+    fn next(&mut self) -> Option<&str> {
+        if self.current + 1 < self.entries.len() {
+            self.current += 1;
+            self.entries.get(self.current).map(|s| s.as_str())
+        } else {
+            None
+        }
+    }
+
+}
 
 fn detect_variables(expr: &Expr, vars: &mut Vec<char>) {
     match expr {
@@ -33,7 +77,17 @@ fn detect_variables(expr: &Expr, vars: &mut Vec<char>) {
     }
 }
 
-// Smart number formatting
+// 🔥 تحويل رقم إلى كسر إذا كان بسيطاً
+fn to_fraction_str(value: f64) -> String {
+    let value_rounded = (value * 100000.0).round() / 100000.0;
+    if let Some(fraction) = Fraction::from_f64(value_rounded, 1e-6) {
+        if fraction.denominator > 1 && fraction.denominator <= 100 {
+            return fraction.to_string();
+        }
+    }
+    format_number(value)
+}
+
 fn format_number(n: f64) -> String {
     let s = format!("{:.6}", n);
     let trimmed = s.trim_end_matches('0').trim_end_matches('.');
@@ -46,7 +100,6 @@ fn format_number(n: f64) -> String {
     }
 }
 
-// Clear terminal screen
 fn clear_screen() {
     if cfg!(target_os = "windows") {
         Command::new("cmd").args(&["/c", "cls"]).status().unwrap();
@@ -63,24 +116,23 @@ fn print_help() {
     println!("  product expr, a..b  - Product series");
     println!("  ai <equation>       - AI solver");
     println!("  plot var,min,max    - Plot function");
+    println!("  export filename     - Export results to JSON/CSV/LATEX");
     println!("  clear / cls         - Clear screen");
+    println!("  history             - Show history");
+    println!("  ↑ / ↓               - Navigate history");
     println!("  help                - Show help");
     println!("  quit                - Exit");
     println!();
 }
 
 fn main() {
-    // Select solver mode based on build profile
-    let solver_mode = if cfg!(debug_assertions) {
-        "Debug (slower)"
-    } else {
-        "Release (fast)"
-    };
-    
     println!("SMS - Smart Math Solver");
-    println!("Mode: {}", solver_mode);
+    println!("Features: Constants, Fractions, Export, History");
     println!("Type 'help' for commands");
     println!();
+    
+    let mut history = History::new();
+    let mut last_export_data: Option<ExportData> = None;
     
     loop {
         print!("> ");
@@ -93,6 +145,9 @@ fn main() {
         if input.is_empty() {
             continue;
         }
+        
+        // 🔥 تاريخ المعادلات
+        history.add(input.to_string());
         
         match input {
             "quit" | "exit" => {
@@ -107,7 +162,40 @@ fn main() {
                 print_help();
                 continue;
             }
+            "history" => {
+                for (i, entry) in history.entries.iter().enumerate() {
+                    println!("  {}. {}", i+1, entry);
+                }
+                continue;
+            }
+            "export" => {
+                if let Some(data) = &last_export_data {
+                    // Export last result
+                    println!("  Exporting to result.json, result.csv, result.tex");
+                    let _ = data.export_json("result.json");
+                    let _ = data.export_csv("result.csv");
+                    let _ = data.export_latex("result.tex");
+                    println!("  Exported!");
+                } else {
+                    println!("  No results to export!");
+                }
+                continue;
+            }
             _ => {}
+        }
+        
+        // 🔥 معالجة الأسهم (↑/↓) - نافذة تفاعلية بسيطة
+        if input == "↑" || input == "up" {
+            if let Some(prev) = history.previous() {
+                println!("  {}", prev);
+            }
+            continue;
+        }
+        if input == "↓" || input == "down" {
+            if let Some(next) = history.next() {
+                println!("  {}", next);
+            }
+            continue;
         }
         
         // Matrix solver
@@ -119,7 +207,7 @@ fn main() {
                     if let Some(vector) = parse_vector(parts[1]) {
                         if let Some(solution) = matrix.solve_linear(&vector) {
                             for (i, val) in solution.iter().enumerate() {
-                                println!("  x{} = {}", i+1, format_number(*val));
+                                println!("  x{} = {}", i+1, to_fraction_str(*val));
                             }
                         } else {
                             println!("  No solution");
@@ -140,7 +228,9 @@ fn main() {
         if input.starts_with("sum ") {
             let rest = &input[4..];
             if let Some(result) = parse_series(rest, SeriesOp::Sum) {
-                println!("  = {}", format_number(result));
+                println!("  = {}  (fraction: {})", 
+                    format_number(result), 
+                    to_fraction_str(result));
             } else {
                 println!("  Usage: sum i^2, i=1..10");
             }
@@ -151,7 +241,9 @@ fn main() {
         if input.starts_with("product ") {
             let rest = &input[8..];
             if let Some(result) = parse_series(rest, SeriesOp::Product) {
-                println!("  = {}", format_number(result));
+                println!("  = {}  (fraction: {})", 
+                    format_number(result), 
+                    to_fraction_str(result));
             } else {
                 println!("  Usage: product i, i=1..5");
             }
@@ -180,7 +272,8 @@ fn main() {
                 let mut vars_map = HashMap::new();
                 vars_map.insert(var, x);
                 let f_x = evaluate(&expr, &vars_map);
-                println!("  {} = {}  (error: {:.2e}, iter: {})", var, format_number(x), f_x.abs(), iterations);
+                println!("  {} = {}  (error: {:.2e}, iter: {})", 
+                    var, to_fraction_str(x), f_x.abs(), iterations);
             } else {
                 println!("  No solution found (error: {:.2e})", error);
             }
@@ -206,7 +299,7 @@ fn main() {
             continue;
         }
         
-        // Regular equation solver with adaptive speed
+        // 🔥 Regular equation solver
         let start = Instant::now();
         
         let mut parser = Parser::new(input);
@@ -219,30 +312,43 @@ fn main() {
             let empty_vars = HashMap::new();
             let result = evaluate(&expr, &empty_vars);
             let elapsed = start.elapsed();
-            println!("  = {}  (time: {:.3}ms)", format_number(result), elapsed.as_secs_f64() * 1000.0);
+            println!("  = {}  (fraction: {})  (time: {:.3}ms)", 
+                format_number(result),
+                to_fraction_str(result),
+                elapsed.as_secs_f64() * 1000.0);
             continue;
         }
         
         let var = vars[0];
-        
-        // Auto-select optimal solver mode
         let solver = EquationSolver::new_adaptive(&expr);
         let (real_roots, complex_roots) = solver.find_all_roots(&expr, var);
         
         let elapsed = start.elapsed();
         
+        // 🔥 حفظ للتصدير
+        let mut export_data = ExportData::new(input.to_string(), var.to_string(), elapsed.as_secs_f64() * 1000.0);
+        
         if real_roots.is_empty() && complex_roots.is_empty() {
             println!("  No solutions  (time: {:.3}ms)", elapsed.as_secs_f64() * 1000.0);
         } else {
             for (i, root) in real_roots.iter().enumerate() {
-                println!("  {}. {} = {}", i+1, var, format_number(*root));
+                let mut vars_map = HashMap::new();
+                vars_map.insert(var, *root);
+                let f_root = evaluate(&expr, &vars_map);
+                println!("  {}. {} = {}  (error: {:.2e})", 
+                    i+1, var, to_fraction_str(*root), f_root.abs());
+                export_data.add_solution(*root, f_root.abs());
             }
             for (i, root) in complex_roots.iter().enumerate() {
-                let real_str = format_number(root.re);
-                let imag_str = format_number(root.im.abs());
+                let real_str = to_fraction_str(root.re);
+                let imag_str = to_fraction_str(root.im.abs());
                 let sign = if root.im >= 0.0 { "+" } else { "-" };
-                println!("  {}. {} = {} {} {}i", 
-                         i + real_roots.len() + 1, var, real_str, sign, imag_str);
+                let mut vars_map = HashMap::new();
+                vars_map.insert(var, *root);
+                let f_root = evaluate_complex(&expr, &vars_map);
+                println!("  {}. {} = {} {} {}i  (error: {:.2e})", 
+                         i + real_roots.len() + 1, var, real_str, sign, imag_str, f_root.norm());
+                export_data.add_complex(root.re, root.im, f_root.norm());
             }
             let total = real_roots.len() + complex_roots.len();
             if total > 1 {
@@ -251,6 +357,10 @@ fn main() {
                 println!("  1 solution found");
             }
             println!("  Time: {:.3}ms", elapsed.as_secs_f64() * 1000.0);
+            
+            // 🔥 حفظ آخر تصدير
+            last_export_data = Some(export_data);
+            println!("  Type 'export' to save results");
         }
     }
 }
