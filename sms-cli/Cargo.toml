@@ -1,0 +1,11 @@
+[package]
+name = "sms-cli"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+sms-core = { path = "../sms-core" }
+plotters = { workspace = true }
+rand = { workspace = true }

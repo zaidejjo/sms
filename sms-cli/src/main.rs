@@ -1,25 +1,10 @@
-mod expr;
-mod parser;
-mod solver;
-mod matrix;
-mod series;
-mod ai;
-mod constants;
-mod fractions;
-mod export;
-
+use sms_core::{Expr, evaluate, evaluate_complex, Parser, EquationSolver, SeriesOp, compute_series, AISolver, Fraction, ExportData};
+use sms_core::matrix::{parse_matrix, parse_vector};
 use std::io;
 use std::time::Instant;
 use std::collections::HashMap;
 use std::process::Command;
-use expr::{Expr, evaluate, evaluate_complex};
-use parser::Parser;
-use solver::EquationSolver;
-use matrix::{parse_matrix, parse_vector};
-use series::{compute_series, SeriesOp};
-use ai::AISolver;
-use fractions::Fraction;
-use export::ExportData;
+use plotters::prelude::*;
 
 // 🔥 تاريخ المعادلات (للتنقل بالأسهم)
 struct History {
@@ -394,8 +379,6 @@ fn parse_series(input: &str, op: SeriesOp) -> Option<f64> {
 }
 
 // Plotting function
-use plotters::prelude::*;
-
 fn plot_function(expr: &Expr, var: char, x_min: f64, x_max: f64) -> Result<(), Box<dyn std::error::Error>> {
     let root = BitMapBackend::new("plot.png", (800, 600)).into_drawing_area();
     root.fill(&WHITE)?;
