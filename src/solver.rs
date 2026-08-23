@@ -11,18 +11,18 @@ pub struct EquationSolver {
 }
 
 impl EquationSolver {
-    // 🔥 الوضع السريع (للأداء)
+    // Fast mode (performance)
     pub fn new() -> Self {
         EquationSolver {
-            max_iterations: 30,        // 🔥 أقل تكرارات
-            tolerance: 1e-8,           // 🔥 دقة أقل قليلاً
-            search_step: 0.5,          // 🔥 خطوة أكبر
-            search_range: 40,          // 🔥 نطاق أقل
+            max_iterations: 30,        // Fewer iterations
+            tolerance: 1e-8,           // Slightly lower precision
+            search_step: 0.5,          // Larger step
+            search_range: 40,          // Smaller range
             precision_mode: false,
         }
     }
 
-    // 🔥 الوضع الدقيق (للحلول المعقدة)
+    // Precision mode (for complex solutions)
     pub fn new_precision() -> Self {
         EquationSolver {
             max_iterations: 80,
@@ -33,13 +33,13 @@ impl EquationSolver {
         }
     }
 
-    // 🔥 الوضع التلقائي (يتكيف مع المعادلة)
+    // Adaptive mode (auto-tunes to equation)
     pub fn new_adaptive(expr: &Expr) -> Self {
-        // تحديد مدى تعقيد المعادلة
+        // Estimate equation complexity
         let complexity = estimate_complexity(expr);
         
         if complexity < 10 {
-            // معادلات بسيطة → سريع جداً
+            // Simple equations -> very fast
             EquationSolver {
                 max_iterations: 20,
                 tolerance: 1e-7,
@@ -48,7 +48,7 @@ impl EquationSolver {
                 precision_mode: false,
             }
         } else if complexity < 50 {
-            // معادلات متوسطة
+            // Medium complexity
             EquationSolver {
                 max_iterations: 40,
                 tolerance: 1e-9,
@@ -57,7 +57,7 @@ impl EquationSolver {
                 precision_mode: false,
             }
         } else {
-            // معادلات معقدة → دقة عالية
+            // Complex equations -> high precision
             EquationSolver {
                 max_iterations: 80,
                 tolerance: 1e-12,
@@ -99,14 +99,13 @@ impl EquationSolver {
             
             let x_new = x - f_x / df_x;
             
-            // 🔥 خروج مبكر إذا تقارب سريع
+            // Early exit on fast convergence
             if (x_new - x).abs() < self.tolerance * 0.1 {
                 return Some(x_new);
             }
             
-            // 🔥 إذا كان التقارب بطيئاً، خفف الشرط
+            // Divergence detection: try different starting point
             if i > 5 && (x_new - x).abs() > (prev_x - x).abs() * 1.5 {
-                // يتباعد → جرب نقطة مختلفة
                 return None;
             }
             
@@ -118,7 +117,7 @@ impl EquationSolver {
             x = x_new;
         }
         
-        // 🔥 تحقق أخير من الدقة
+        // Final accuracy check
         let mut vars = HashMap::new();
         vars.insert(var, x);
         let f_x = evaluate(expr, &vars);
@@ -133,20 +132,20 @@ impl EquationSolver {
         let mut raw_real: Vec<f64> = Vec::new();
         let mut raw_complex: Vec<Complex<f64>> = Vec::new();
         
-        // 🔥 بحث ذكي متكيف
+        // Adaptive smart search
         let mut starts = Vec::new();
         
-        // 1. نقاط استراتيجية حول الصفر
+        // 1. Strategic points around zero
         for i in -self.search_range..=self.search_range {
             starts.push(i as f64 * self.search_step);
         }
         
-        // 2. نقاط إضافية حول الحلول المحتملة (إذا وجدنا أي حل)
+        // 2. Additional points near potential solutions
         let mut found_any = false;
         
-        // 🔥 بحث متوازي عن الحلول (في الوضع الدقيق فقط)
+        // Extended search in precision mode
         if self.precision_mode {
-            // استخدم نقاط أكثر
+            // Use more starting points
             for i in -(self.search_range * 2)..=(self.search_range * 2) {
                 let start = i as f64 * self.search_step * 0.5;
                 if !starts.contains(&start) {
@@ -178,9 +177,9 @@ impl EquationSolver {
             }
         }
         
-        // 🔥 إذا ما لقينا حلول، وسّع البحث
+        // Widen search if no solutions found
         if !found_any && !self.precision_mode {
-            // جرب بحث أوسع
+            // Try broader search
             let wider_solver = EquationSolver {
                 max_iterations: 50,
                 tolerance: 1e-8,
@@ -218,14 +217,14 @@ impl EquationSolver {
             }
         }
         
-        // 🔥 تجميع سريع للحلول
+        // Cluster/filter solutions
         let final_real = self.cluster_real_roots(&raw_real);
         let final_complex = self.cluster_complex_roots(&raw_complex);
         
         (final_real, final_complex)
     }
 
-    // 🔥 تجميع الحلول الحقيقية (محسّن للسرعة)
+    // Cluster real roots (optimized for speed)
     fn cluster_real_roots(&self, roots: &[f64]) -> Vec<f64> {
         if roots.is_empty() {
             return Vec::new();
@@ -257,7 +256,7 @@ impl EquationSolver {
             .collect()
     }
 
-    // 🔥 تجميع الحلول المركبة
+    // Cluster complex roots
     fn cluster_complex_roots(&self, roots: &[Complex<f64>]) -> Vec<Complex<f64>> {
         if roots.is_empty() {
             return Vec::new();
@@ -328,7 +327,7 @@ impl EquationSolver {
     }
 }
 
-// 🔥 تقدير تعقيد المعادلة
+// Estimate equation complexity for adaptive solver
 fn estimate_complexity(expr: &Expr) -> usize {
     match expr {
         Expr::Num(_) | Expr::Var(_) => 1,
@@ -344,7 +343,7 @@ fn estimate_complexity(expr: &Expr) -> usize {
     }
 }
 
-// 🔥 اشتقاق رمزي
+// Symbolic differentiation
 pub fn derivative(expr: &Expr, var: char) -> Expr {
     use crate::expr::Expr;
     

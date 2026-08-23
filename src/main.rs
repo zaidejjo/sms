@@ -33,7 +33,7 @@ fn detect_variables(expr: &Expr, vars: &mut Vec<char>) {
     }
 }
 
-// 🔥 دالة لتنسيق الأعداد بشكل ذكي
+// Smart number formatting
 fn format_number(n: f64) -> String {
     let s = format!("{:.6}", n);
     let trimmed = s.trim_end_matches('0').trim_end_matches('.');
@@ -46,7 +46,7 @@ fn format_number(n: f64) -> String {
     }
 }
 
-// 🔥 دالة لتنظيف الشاشة
+// Clear terminal screen
 fn clear_screen() {
     if cfg!(target_os = "windows") {
         Command::new("cmd").args(&["/c", "cls"]).status().unwrap();
@@ -70,14 +70,14 @@ fn print_help() {
 }
 
 fn main() {
-    // 🔥 اختيار وضع الحل حسب النظام
+    // Select solver mode based on build profile
     let solver_mode = if cfg!(debug_assertions) {
         "Debug (slower)"
     } else {
         "Release (fast)"
     };
     
-    println!("Smart Math Solver v7.0 (Ultra Fast)");
+    println!("SMS - Smart Math Solver");
     println!("Mode: {}", solver_mode);
     println!("Type 'help' for commands");
     println!();
@@ -206,7 +206,7 @@ fn main() {
             continue;
         }
         
-        // 🔥 Regular equation solver with adaptive speed
+        // Regular equation solver with adaptive speed
         let start = Instant::now();
         
         let mut parser = Parser::new(input);
@@ -225,7 +225,7 @@ fn main() {
         
         let var = vars[0];
         
-        // 🔥 اختيار الوضع المناسب تلقائياً
+        // Auto-select optimal solver mode
         let solver = EquationSolver::new_adaptive(&expr);
         let (real_roots, complex_roots) = solver.find_all_roots(&expr, var);
         
