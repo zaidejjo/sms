@@ -1,0 +1,18 @@
+[package]
+name = "sms-tui"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+sms-core = { path = "../sms-core", features = ["symbolic"] }
+ratatui = "0.28"
+crossterm = "0.28"
+plotters = { workspace = true }
+rusqlite = "0.31"
+serde = { workspace = true, features = ["derive"] }
+toml = "0.8"
+dirs = "6.0"
+anyhow = "1.0"
+num = { workspace = true }

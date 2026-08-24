@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use num::Complex;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Num(f64),
     Var(char),

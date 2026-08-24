@@ -1,4 +1,5 @@
 use crate::expr::Expr;
+use crate::constants::CONSTANTS;
 
 pub struct Parser {
     chars: Vec<char>,
@@ -118,12 +119,17 @@ impl Parser {
                 let mut name = String::new();
                 name.push(c);
                 while let Some(next) = self.peek() {
-                    if next.is_ascii_alphabetic() {
+                    if next.is_ascii_alphabetic() || next.is_ascii_digit() || next == '_' {
                         name.push(next);
                         self.next();
                     } else {
                         break;
                     }
+                }
+                
+                // Check if it's a constant first
+                if let Some(&value) = CONSTANTS.get(&name) {
+                    return Expr::Num(value);
                 }
                 
                 match name.as_str() {

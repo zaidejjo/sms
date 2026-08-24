@@ -1,0 +1,14 @@
+[package]
+name = "sms-cli"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+sms-core = { path = "../sms-core" }
+sms-tui = { path = "../sms-tui" }
+plotters = { workspace = true }
+rand = { workspace = true }
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
