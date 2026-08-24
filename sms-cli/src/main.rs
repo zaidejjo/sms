@@ -507,7 +507,7 @@ fn render_ascii_plot(points: &[(f64, f64)], x_min: f64, x_max: f64, var: char) {
     
     // Y-axis labels
     for (i, row) in grid.iter().enumerate().rev() {
-        let y_val = y_max - (i as f64 / (height - 1) as f64) * (y_max - y_min);
+        let _y_val = y_max - (i as f64 / (height - 1) as f64) * (y_max - y_min);
         let label = if i == 0 {
             format!("{:.2}", y_max)
         } else if i == height - 1 {

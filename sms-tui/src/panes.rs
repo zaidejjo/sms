@@ -1,15 +1,12 @@
 //! TUI Panes - Input, Solutions, Plot, History
 
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::Rect,
     style::{Color, Modifier, Style},
-    text::{Line as TextLine, Span, Text},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap, Dataset, Axis},
-    symbols::Marker,
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame,
 };
-use ratatui::widgets::canvas::{Canvas, Points, Line as CanvasLine};
-use sms_core::{Parser, evaluate, evaluate_complex, EquationSolver, Expr};
+use sms_core::{evaluate, evaluate_complex, Expr};
 use std::collections::HashMap;
 use num::Complex;
 

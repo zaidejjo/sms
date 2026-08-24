@@ -1,6 +1,6 @@
 //! History persistence using SQLite
 
-use rusqlite::{Connection, Result};
+use rusqlite::Connection;
 use std::path::PathBuf;
 use dirs;
 use anyhow::Context;
@@ -47,6 +47,7 @@ impl HistoryDB {
         Ok(entries)
     }
 
+    #[allow(dead_code)]
     pub fn clear(&self) -> anyhow::Result<()> {
         self.conn.execute("DELETE FROM history", [])?;
         Ok(())

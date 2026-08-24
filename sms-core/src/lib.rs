@@ -12,8 +12,6 @@
 //! - Fraction handling
 //! - Export (JSON, CSV, LaTeX)
 
-#![allow(box_patterns)]
-
 pub mod expr;
 pub mod parser;
 pub mod solver;

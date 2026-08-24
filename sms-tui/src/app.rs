@@ -17,7 +17,7 @@ use crate::{
     config::Config,
     history::HistoryDB,
 };
-use sms_core::{Parser, evaluate, evaluate_complex, EquationSolver, Expr};
+use sms_core::{Parser, evaluate, EquationSolver, Expr};
 
 pub struct App {
     input: InputPane,
