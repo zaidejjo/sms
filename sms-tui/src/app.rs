@@ -6,6 +6,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use plotters::prelude::*;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 use std::time::Duration;
@@ -199,6 +200,9 @@ impl App {
             Action::Export => {
                 self.export_results()?;
             }
+            Action::ExportPlot => {
+                self.export_plot()?;
+            }
             Action::HistoryUp => {
                 match self.current_pane {
                     PaneFocus::Solutions => self.solutions.prev(),
@@ -345,6 +349,58 @@ impl App {
         Ok(())
     }
 
+    fn export_plot(&mut self) -> Result<()> {
+        if self.plot.data.is_empty() {
+            self.status = " No plot to export. Press 'p' to plot first. ".to_string();
+            return Ok(());
+        }
+
+        if let (Some(expr), Some(var)) = (&self.last_expr, self.last_var) {
+            use plotters::prelude::*;
+            
+            let root = BitMapBackend::new("plot.png", (800, 600)).into_drawing_area();
+            root.fill(&WHITE)?;
+
+            let mut chart = ChartBuilder::on(&root)
+                .caption(format!("f({})", var), ("sans-serif", 24))
+                .margin(10)
+                .x_label_area_size(30)
+                .y_label_area_size(30)
+                .build_cartesian_2d(-10.0..10.0, -10.0..10.0)?;
+
+            chart.configure_mesh().draw()?;
+
+            let num_points = 1000;
+            let step = 20.0 / 1000.0;
+            let mut points: Vec<(f64, f64)> = Vec::new();
+            
+            for i in 0..=num_points {
+                let x = -10.0 + i as f64 * step;
+                let mut vars = HashMap::new();
+                vars.insert(var, x);
+                let y = evaluate(expr, &vars);
+                if y.is_finite() && y.abs() < 100.0 {
+                    points.push((x, y));
+                }
+            }
+
+            chart.draw_series(LineSeries::new(points, &RED))?
+                .label("f(x)")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+            chart.configure_series_labels()
+                .border_style(&BLACK)
+                .draw()?;
+
+            root.present()?;
+            self.status = " Plot exported to plot.png ".to_string();
+            Ok(())
+        } else {
+            self.status = " No equation to plot. Solve an equation first. ".to_string();
+            Ok(())
+        }
+    }
+
     fn clear_all(&mut self) {
         self.input.buffer.clear();
         self.input.cursor = 0;
@@ -356,7 +412,7 @@ impl App {
     }
 
     fn show_help(&mut self) {
-        self.status = " Help: Tab=Switch pane, Enter=Solve, p=Plot, e=Export, c=Clear, ↑↓=Navigate, q=Quit ".to_string();
+        self.status = " Help: Tab=Switch pane, Enter=Solve, p=Plot, e=Export, E=Export Plot, c=Clear, ↑↓=Navigate, q=Quit ".to_string();
     }
 
     fn detect_variables(&self, expr: &Expr, vars: &mut Vec<char>) {

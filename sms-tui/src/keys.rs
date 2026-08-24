@@ -9,6 +9,7 @@ pub enum Action {
     Solve,
     Plot,
     Export,
+    ExportPlot,
     HistoryUp,
     HistoryDown,
     PaneNext,
@@ -35,6 +36,7 @@ impl KeyHandler {
         Self::bind(&mut bindings, &config.solve, Action::Solve);
         Self::bind(&mut bindings, &config.plot, Action::Plot);
         Self::bind(&mut bindings, &config.export, Action::Export);
+        Self::bind(&mut bindings, &config.export_plot, Action::ExportPlot);
         Self::bind(&mut bindings, &config.history_up, Action::HistoryUp);
         Self::bind(&mut bindings, &config.history_down, Action::HistoryDown);
         Self::bind(&mut bindings, &config.pane_next, Action::PaneNext);
