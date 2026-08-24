@@ -124,7 +124,13 @@ fn main() {
         io::Write::flush(&mut io::stdout()).unwrap();
         
         let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+        let bytes_read = io::stdin().read_line(&mut input).unwrap();
+        
+        // Handle EOF (piping input)
+        if bytes_read == 0 {
+            break;
+        }
+        
         let input = input.trim();
         
         if input.is_empty() {
@@ -406,7 +412,7 @@ fn plot_function(expr: &Expr, var: char, x_min: f64, x_max: f64) -> Result<(), B
         }
     }
 
-    chart.draw_series(LineSeries::new(points, &RED))?
+    chart.draw_series(LineSeries::new(points.clone(), &RED))?
         .label("f(x)")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
@@ -417,5 +423,116 @@ fn plot_function(expr: &Expr, var: char, x_min: f64, x_max: f64) -> Result<(), B
     root.present()?;
     println!("  Plot saved to plot.png");
     
+    // Also render ASCII plot in terminal
+    render_ascii_plot(&points, x_min, x_max, var);
+    
     Ok(())
+}
+
+/// Render a simple ASCII plot in the terminal
+fn render_ascii_plot(points: &[(f64, f64)], x_min: f64, x_max: f64, var: char) {
+    if points.is_empty() {
+        println!("  No points to plot");
+        return;
+    }
+    
+    let y_vals: Vec<f64> = points.iter().map(|(_, y)| *y).collect();
+    let y_min = y_vals.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    let y_max = y_vals.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+    
+    let width = 80;
+    let height = 20;
+    
+    // Create a grid
+    let mut grid = vec![vec![' '; width]; height];
+    
+    // Map points to grid
+    for &(x, y) in points {
+        if !x.is_finite() || !y.is_finite() {
+            continue;
+        }
+        let col = if x_max != x_min {
+            ((x - x_min) / (x_max - x_min) * (width - 1) as f64).round() as usize
+        } else {
+            width / 2
+        };
+        let row = if y_max != y_min {
+            ((y_max - y) / (y_max - y_min) * (height - 1) as f64).round() as usize
+        } else {
+            height / 2
+        };
+        
+        if col < width && row < height {
+            grid[row][col] = '●';
+        }
+    }
+    
+    // Draw axes
+    let zero_row = if y_max != y_min {
+        ((y_max - 0.0) / (y_max - y_min) * (height - 1) as f64).round() as usize
+    } else {
+        height / 2
+    };
+    let zero_col = if x_max != x_min {
+        ((0.0 - x_min) / (x_max - x_min) * (width - 1) as f64).round() as usize
+    } else {
+        width / 2
+    };
+    
+    // Draw Y axis
+    if zero_col < width {
+        for r in 0..height {
+            if grid[r][zero_col] == ' ' {
+                grid[r][zero_col] = '│';
+            }
+        }
+    }
+    
+    // Draw X axis
+    if zero_row < height {
+        for c in 0..width {
+            if grid[zero_row][c] == ' ' {
+                grid[zero_row][c] = '─';
+            }
+        }
+    }
+    
+    // Origin
+    if zero_row < height && zero_col < width {
+        grid[zero_row][zero_col] = '┼';
+    }
+    
+    // Print Y-axis labels and grid
+    println!("  f({}) from {:.2} to {:.2}", var, x_min, x_max);
+    
+    // Y-axis labels
+    for (i, row) in grid.iter().enumerate().rev() {
+        let y_val = y_max - (i as f64 / (height - 1) as f64) * (y_max - y_min);
+        let label = if i == 0 {
+            format!("{:.2}", y_max)
+        } else if i == height - 1 {
+            format!("{:.2}", y_min)
+        } else {
+            "".to_string()
+        };
+        
+        let line: String = row.iter().collect();
+        if !label.is_empty() {
+            println!(" {:>6} │{}", label, line);
+        } else {
+            println!("       │{}", line);
+        }
+    }
+    
+    // X-axis labels
+    print!("       └");
+    for i in 0..width {
+        if i % 10 == 0 {
+            let x_val = x_min + (i as f64 / (width - 1) as f64) * (x_max - x_min);
+            print!("{:.1}", x_val);
+        } else {
+            print!("─");
+        }
+    }
+    println!();
 }

@@ -3,12 +3,12 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
+    text::{Line as TextLine, Span, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap, Dataset, Axis},
     symbols::Marker,
     Frame,
 };
-use ratatui::widgets::canvas::{Canvas, Points};
+use ratatui::widgets::canvas::{Canvas, Points, Line as CanvasLine};
 use sms_core::{Parser, evaluate, evaluate_complex, EquationSolver, Expr};
 use std::collections::HashMap;
 use num::Complex;
