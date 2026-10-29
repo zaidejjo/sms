@@ -1,0 +1,14 @@
+name: Interactive macOS Terminal
+on: workflow_dispatch
+
+jobs:
+  interactive-terminal:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Interactive SSH Session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
